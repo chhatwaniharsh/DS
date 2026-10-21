@@ -1,0 +1,451 @@
+import matplotlib.pyplot as plt
+import networkx as nx
+from collections import defaultdict
+from itertools import combinations
+
+#GROCERY DATASET
+transactions = [
+    ["Milk", "Bread", "Butter"],
+    ["Bread", "Butter", "Jam"],
+    ["Milk", "Bread", "Butter", "Jam"],
+    ["Bread", "Milk"],
+    ["Milk", "Butter"],
+    ["Bread", "Butter"],
+    ["Milk", "Bread", "Butter"],
+    ["Bread", "Jam"],
+    ["Milk", "Bread", "Butter"],
+    ["Bread", "Butter", "Jam"]
+]
+
+#PARAMETERS
+MIN_SUPPORT = 0.001
+MIN_CONFIDENCE = 0.8
+total_transactions = len(transactions)
+minimum_count = MIN_SUPPORT * total_transactions
+
+print("=" * 60)
+print("FP-TREE / FP-GROWTH")
+print("=" * 60)
+
+print("Number of transactions:", total_transactions)
+print("Minimum support:", MIN_SUPPORT)
+print("Minimum confidence:", MIN_CONFIDENCE)
+print("Minimum support count:", minimum_count)
+
+#COUNT ITEM FREQUENCIES
+item_count = defaultdict(int)
+for transaction in transactions:
+    for item in set(transaction):
+        item_count[item] += 1
+
+print("\nItem Frequencies")
+print("-" * 40)
+
+for item, count in item_count.items():
+    print(f"{item}: {count}")
+
+#FIND FREQUENT ITEMS
+frequent_items = {}
+
+for item, count in item_count.items():
+    if count >= minimum_count:
+        frequent_items[item] = count
+
+#SORT ITEMS BY FREQUENCY
+frequency_order = sorted(
+    frequent_items,
+    key=lambda item: frequent_items[item],
+    reverse=True
+)
+
+print("\nFrequency Order")
+print("-" * 40)
+for item in frequency_order:
+    print(
+        f"{item}: "
+        f"{frequent_items[item]}"
+    )
+
+#FP-TREE NODE
+class FPNode:
+
+    def __init__(
+        self,
+        item,
+        count=1,
+        parent=None
+    ):
+        self.item = item
+        self.count = count
+        self.parent = parent
+        self.children = {}
+
+#CREATE ROOT
+root = FPNode(
+    "ROOT",
+    count=0
+)
+
+#INSERT TRANSACTION
+def insert_transaction(transaction):
+
+    current = root
+
+    for item in transaction:
+
+        if item in current.children:
+            current.children[item].count += 1
+
+        else:
+            new_node = FPNode(
+                item,
+                count=1,
+                parent=current
+            )
+
+            current.children[item] = new_node
+
+        current = current.children[item]
+
+#CALCULATE TREE POSITIONS
+def calculate_positions(
+    node,
+    x=0,
+    y=0,
+    positions=None,
+    next_x=None
+):
+
+    if positions is None:
+        positions = {}
+
+    if next_x is None:
+        next_x = [0]
+
+    children = list(node.children.values())
+
+    if len(children) == 0:
+
+        positions[node] = (
+            next_x[0],
+            y
+        )
+
+        next_x[0] += 1
+
+    else:
+
+        child_positions = []
+
+        for child in children:
+
+            calculate_positions(
+                child,
+                x,
+                y - 1,
+                positions,
+                next_x
+            )
+
+            child_positions.append(
+                positions[child]
+            )
+
+        first_x = child_positions[0][0]
+        last_x = child_positions[-1][0]
+
+        positions[node] = (
+            (first_x + last_x) / 2,
+            y
+        )
+
+    return positions
+
+#PLOT FP-TREE
+def plot_fp_tree(
+    root,
+    transaction_number
+):
+
+    graph = nx.DiGraph()
+    labels = {}
+
+    # Add root
+    graph.add_node(root)
+    labels[root] = "ROOT"
+
+    # Build graph
+    def add_nodes(node):
+
+        for child in node.children.values():
+
+            graph.add_node(child)
+
+            graph.add_edge(
+                node,
+                child
+            )
+
+            labels[child] = (
+                f"{child.item}\n"
+                f"Count: {child.count}"
+            )
+
+            add_nodes(child)
+
+    add_nodes(root)
+
+    # Calculate hierarchical positions
+    positions = calculate_positions(root)
+
+    # Convert node positions
+    pos = {}
+
+    for node, position in positions.items():
+        pos[node] = position
+
+    # Plot
+    plt.figure(
+        figsize=(12, 7)
+    )
+
+    nx.draw(
+        graph,
+        pos,
+        labels=labels,
+        with_labels=True,
+        node_size=3500,
+        node_shape="o",
+        font_size=9,
+        arrows=True,
+        arrowsize=15
+    )
+
+    plt.title(
+        f"FP-Tree After Transaction {transaction_number}",
+        fontsize=14
+    )
+
+    plt.axis("off")
+    plt.tight_layout()
+    plt.show()
+
+#BUILD FP-TREE TRANSACTION BY TRANSACTION
+print("\n")
+print("=" * 60)
+print("FP-TREE EVOLUTION")
+print("=" * 60)
+
+for transaction_number, transaction in enumerate(
+    transactions,
+    start=1
+):
+
+    # Keep frequent items
+    filtered_transaction = [
+        item
+        for item in transaction
+        if item in frequent_items
+    ]
+
+    # Sort according to frequency
+    filtered_transaction.sort(
+        key=lambda item:
+        frequency_order.index(item)
+    )
+
+    # Insert into FP-tree
+    insert_transaction(
+        filtered_transaction
+    )
+
+    print("\n" + "-" * 60)
+
+    print(
+        f"Transaction {transaction_number}"
+    )
+
+    print(
+        "Original:",
+        transaction
+    )
+
+    print(
+        "Ordered:",
+        filtered_transaction
+    )
+
+    print("-" * 60)
+
+    # Plot tree
+    plot_fp_tree(
+        root,
+        transaction_number
+    )
+
+#FIND FREQUENT ITEMSETS
+frequent_itemsets = []
+
+all_items = list(
+    frequent_items.keys()
+)
+
+for size in range(
+    1,
+    len(all_items) + 1
+):
+
+    for combination in combinations(
+        all_items,
+        size
+    ):
+
+        itemset = set(
+            combination
+        )
+
+        count = 0
+
+        for transaction in transactions:
+
+            if itemset.issubset(
+                set(transaction)
+            ):
+                count += 1
+
+        support = (
+            count /
+            total_transactions
+        )
+
+        if support >= MIN_SUPPORT:
+
+            frequent_itemsets.append(
+                (
+                    combination,
+                    support,
+                    count
+                )
+            )
+
+#DISPLAY FREQUENT ITEMSETS
+print("\n")
+print("=" * 60)
+print("FREQUENT ITEMSETS")
+print("=" * 60)
+
+for itemset, support, count in frequent_itemsets:
+
+    print(
+        f"{itemset}"
+        f" | Support = {support:.3f}"
+        f" | Count = {count}"
+    )
+
+#GENERATE ASSOCIATION RULES
+print("\n")
+print("=" * 60)
+print("ASSOCIATION RULES")
+print("=" * 60)
+
+rules_found = False
+
+for itemset, itemset_support, itemset_count in frequent_itemsets:
+
+    if len(itemset) < 2:
+        continue
+
+    itemset_set = set(
+        itemset
+    )
+
+    # Generate possible antecedents
+    for size in range(
+        1,
+        len(itemset)
+    ):
+
+        for antecedent_tuple in combinations(
+            itemset,
+            size
+        ):
+
+            antecedent = set(
+                antecedent_tuple
+            )
+
+            consequent = (
+                itemset_set -
+                antecedent
+            )
+
+            # Count antecedent occurrences
+            antecedent_count = 0
+
+            for transaction in transactions:
+
+                if antecedent.issubset(
+                    set(transaction)
+                ):
+                    antecedent_count += 1
+
+            if antecedent_count == 0:
+                continue
+
+            antecedent_support = (
+                antecedent_count /
+                total_transactions
+            )
+
+            confidence = (
+                itemset_support /
+                antecedent_support
+            )
+
+            # Check confidence
+            if confidence >= MIN_CONFIDENCE:
+
+                rules_found = True
+
+                print(
+                    f"{set(antecedent)}"
+                    f" --> "
+                    f"{set(consequent)}"
+                    f" | Support = "
+                    f"{itemset_support:.3f}"
+                    f" | Confidence = "
+                    f"{confidence:.3f}"
+                )
+
+
+if not rules_found:
+
+    print(
+        "No rules found with "
+        "confidence >= 0.8"
+    )
+
+#FINAL RESULT
+print("\n")
+print("=" * 60)
+print("RESULT")
+print("=" * 60)
+
+print(
+    "FP-Tree construction completed."
+)
+
+print(
+    "Minimum support:",
+    MIN_SUPPORT
+)
+
+print(
+    "Minimum confidence:",
+    MIN_CONFIDENCE
+)
+
+print(
+    "The tree was plotted after "
+    "each transaction."
+)
