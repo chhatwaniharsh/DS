@@ -1,0 +1,108 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.model_selection import train_test_split
+from sklearn.tree import DecisionTreeClassifier, plot_tree
+from sklearn.metrics import confusion_matrix, accuracy_score
+
+#Load Titanic dataset
+df = pd.read_csv("train.csv")
+
+#Display first five rows
+print("First 5 rows:")
+print(df.head())
+
+#Select required columns
+df = df[['Survived', 'Pclass', 'Sex', 'Age', 'SibSp',
+         'Parch', 'Fare', 'Embarked']]
+
+#Handle missing values
+df['Age'] = df['Age'].fillna(df['Age'].median())
+
+df['Embarked'] = df['Embarked'].fillna(
+    df['Embarked'].mode()[0]
+)
+
+#Encode categorical variables
+df['Sex'] = df['Sex'].map({
+    'male': 0,
+    'female': 1
+})
+
+df = pd.get_dummies(
+    df,
+    columns=['Embarked'],
+    drop_first=True,
+    dtype=int
+)
+
+#Separate features and target
+X = df.drop('Survived', axis=1)
+y = df['Survived']
+
+# 7. Split dataset
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+#Create Decision Tree classifier
+model = DecisionTreeClassifier(
+    criterion='entropy',
+    max_depth=2,
+    random_state=42
+)
+
+#Train the model
+model.fit(X_train, y_train)
+
+#Make predictions
+y_pred = model.predict(X_test)
+
+#Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+print("\nAccuracy:", accuracy)
+
+#Create confusion matrix
+cm = confusion_matrix(y_test, y_pred)
+
+print("\nConfusion Matrix:")
+print(cm)
+
+#Plot confusion matrix
+plt.figure(figsize=(6, 4))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=['Not Survived', 'Survived'],
+    yticklabels=['Not Survived', 'Survived']
+)
+
+plt.xlabel("Predicted")
+plt.ylabel("Actual")
+plt.title("Confusion Matrix - Decision Tree")
+plt.show()
+
+#Plot Decision Tree
+plt.figure(figsize=(10, 6))
+
+plot_tree(
+    model,
+    feature_names=X.columns,
+    class_names=['Not Survived', 'Survived'],
+    filled=True,
+    rounded=True,
+    proportion=True,
+    impurity=False,
+    fontsize=9
+)
+
+plt.title("Titanic Survival Decision Tree")
+plt.tight_layout()
+plt.show()
