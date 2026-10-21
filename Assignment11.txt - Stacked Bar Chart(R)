@@ -1,0 +1,24 @@
+months <- c("Mar", "Apr", "May", "Jun", "Jul")
+regions <- c("East", "West", "North")
+colors <- c("green", "orange", "brown")
+
+revenue <- matrix(
+  c(100, 120, 110,
+    150, 140, 130,
+    180, 160, 150,
+    200, 190, 170,
+    220, 210, 190),
+  nrow = 5,
+  byrow = TRUE
+)
+
+barplot(
+  t(revenue),
+  names.arg = months,
+  col = colors,
+  xlab = "Month",
+  ylab = "Revenue",
+  main = "Monthly Revenue by Region",
+  legend.text = regions,
+  args.legend = list(x = "topleft",cex=0.8)
+)
