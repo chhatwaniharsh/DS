@@ -1,0 +1,137 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+import seaborn as sns
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
+
+#Load the dataset
+df = pd.read_csv("tissue_gene_expression.csv")
+
+#Display first five rows
+print("First 5 rows:")
+print(df.head())
+ 
+
+#Display dataset shape
+print("\nDataset Shape:")
+print(df.shape)
+ 
+
+#Select input features and actual tissue types
+# All columns except the last column = gene expression features
+# Last column = actual tissue type
+X = df.iloc[:, :-1]
+y = df.iloc[:, -1]
+
+#Convert features to numeric values
+X = X.apply(pd.to_numeric, errors="coerce")
+
+#Remove columns containing only missing values
+X = X.dropna(axis=1, how="all")
+
+#Fill remaining missing values with column mean
+X = X.fillna(X.mean())
+
+#Fill any remaining missing values with 0
+X = X.fillna(0)
+
+#Check missing values
+print("\nMissing Values:")
+print(X.isnull().sum().sum())
+ 
+
+#Display actual tissue types
+print("\nActual Tissue Types:")
+print(y.value_counts())
+ 
+
+#Standardize the data
+scaler = StandardScaler()
+
+X_scaled = scaler.fit_transform(X)
+
+#Create K-Means model
+model = KMeans(
+    n_clusters=7,
+    random_state=42,
+    n_init=10
+)
+
+#Train K-Means model and predict clusters
+clusters = model.fit_predict(X_scaled)
+
+#Add cluster labels to dataset
+df["Cluster"] = clusters
+
+#Display number of samples in each cluster
+print("\nNumber of Samples in Each Cluster:")
+print(df["Cluster"].value_counts().sort_index())
+ 
+
+#Compare clusters with actual tissue types
+comparison = pd.crosstab(
+    df["Cluster"],
+    y
+)
+
+print("\nCluster vs Actual Tissue Type:")
+print(comparison)
+
+#Display heatmap
+plt.figure(figsize=(12, 7))
+
+sns.heatmap(
+    comparison,
+    annot=True,
+    fmt="d",
+    cmap="Blues"
+)
+
+plt.xlabel("Actual Tissue Type")
+plt.ylabel("K-Means Cluster")
+plt.title("K-Means Clusters vs Actual Tissue Types")
+plt.tight_layout()
+plt.show()
+ 
+
+#Display inertia
+print("\nK-Means Inertia:")
+print(model.inertia_)
+ 
+
+#Display final cluster assignments
+print("\nFinal Cluster Assignments:")
+print(df[["Cluster"]].head(20))
+ 
+
+#Predict cluster for a new tissue sample
+new_sample = X.iloc[[0]]
+new_sample_scaled = scaler.transform(new_sample)
+predicted_cluster = model.predict(new_sample_scaled)
+print(
+    "\nPredicted cluster for the new tissue sample:",
+    predicted_cluster[0]
+)
+
+clusters = model.fit_predict(X_scaled)
+
+# Add cluster labels to dataset
+df["Cluster"] = clusters
+
+# Display Cluster Scatter Plot
+plt.figure(figsize=(10, 7))
+
+plt.scatter(
+    X_scaled[:, 0],
+    X_scaled[:, 1],
+    c=clusters,
+    cmap="viridis",
+    s=50
+)
+
+plt.xlabel("Feature 1")
+plt.ylabel("Feature 2")
+plt.title("K-Means Clustering Scatter Plot")
+plt.colorbar(label="Cluster")
+plt.tight_layout()
+plt.show()
