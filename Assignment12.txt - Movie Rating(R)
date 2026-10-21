@@ -1,0 +1,26 @@
+movies <- read.csv(
+  "C:/Users/LENOVO/OneDrive/Desktop/DS/moviesData.xls",
+  stringsAsFactors = FALSE
+)
+
+first10 <- head(movies, 10)
+
+scores <- as.numeric(first10$tomatometer_rating)
+
+png("critics_score_first10.png",
+    width = 1200, height = 600, res = 120)
+
+barplot(scores,
+        names.arg = first10$movie_title,
+        col = "steelblue",
+        xlab = "Movies",
+        ylab = "Critics Score",
+        main = "Critics Score of First 10 Movies",
+        las = 2,
+        cex.names = 0.7)
+
+dev.off()
+
+print(scores)
+
+file.show("critics_score_first10.png")
