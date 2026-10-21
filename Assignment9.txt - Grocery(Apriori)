@@ -1,0 +1,82 @@
+import pandas as pd
+from mlxtend.frequent_patterns import apriori, association_rules
+
+#Load dataset
+df = pd.read_csv("Groceries.csv")
+print("Dataset:")
+print(df.head())
+print("\nShape:", df.shape)
+
+#Create transactions
+transactions = df.groupby(
+    ['Member_number', 'Date']
+)['itemDescription'].apply(list).tolist()
+
+print("\nNumber of transactions:", len(transactions))
+
+#One-hot encoding
+all_items = sorted(
+    set(item for transaction in transactions for item in transaction)
+)
+
+encoded = []
+for transaction in transactions:
+    row = {
+        item: (item in transaction)
+        for item in all_items
+    }
+    encoded.append(row)
+
+basket = pd.DataFrame(encoded)
+print("\nBasket shape:", basket.shape)
+
+#Apply Apriori
+frequent_itemsets = apriori(
+    basket,
+    min_support=0.001,
+    use_colnames=True
+)
+print("\nNumber of frequent itemsets:", len(frequent_itemsets))
+
+#Generate association rules
+rules = association_rules(
+    frequent_itemsets,
+    metric="confidence",
+    min_threshold=0.8
+)
+
+print("Number of rules with confidence >= 0.8:", len(rules))
+
+#Sort by confidence
+rules = rules.sort_values(
+    by="confidence",
+    ascending=False
+)
+
+#Display Top 5
+if len(rules) == 0:
+    print("\nNo association rules found with")
+    print("minimum confidence = 0.8")
+else:
+    top5 = rules.head(5)
+
+    print("\nTOP 5 ASSOCIATION RULES")
+    print("=" * 80)
+
+    for i, row in top5.reset_index(drop=True).iterrows():
+        antecedent = ", ".join(
+            sorted(row["antecedents"])
+        )
+        consequent = ", ".join(
+            sorted(row["consequents"])
+        )
+
+        print(f"\nRule {i+1}")
+        print(f"{antecedent}  →  {consequent}")
+        print(f"Support    : {row['support']:.4f}")
+        print(f"Confidence : {row['confidence']:.4f}")
+        print(f"Lift       : {row['lift']:.4f}")
+
+        if row["confidence"] >= 0.8:
+            print("Strength   : ★ STRONG")
+        print("-" * 80)
