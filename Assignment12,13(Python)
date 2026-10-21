@@ -1,0 +1,62 @@
+##12
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Read CSV file
+movies = pd.read_csv("moviesData.csv")
+
+# Select first 10 movies
+first10 = movies.head(10)
+
+# Create bar chart
+plt.figure(figsize=(12, 6))
+
+plt.bar(
+    first10["movie_title"],
+    first10["tomatometer_rating"],
+    color="steelblue"
+)
+
+plt.xlabel("Movies")
+plt.ylabel("Critics Score")
+plt.title("Critics Score of First 10 Movies")
+
+plt.xticks(rotation=45, ha="right")
+
+plt.tight_layout()
+
+# Save the plot
+plt.savefig("critics_score_first10.png", dpi=300)
+
+# Display
+plt.show()
+
+
+
+##13
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Read mtcars dataset directly from GitHub
+mtcars = pd.read_csv(
+    "https://raw.githubusercontent.com/selva86/datasets/master/mtcars.csv"
+)
+
+# Display first 5 rows
+print(mtcars.head())
+
+# Create boxplot
+plt.figure(figsize=(8, 6))
+
+plt.boxplot(
+    [mtcars["mpg"], mtcars["cyl"]],
+    tick_labels=["mpg", "cyl"]
+)
+
+plt.xlabel("Columns")
+plt.ylabel("Values")
+plt.title("Boxplot of mpg and cyl")
+
+plt.savefig("mtcars_boxplot.png", dpi=300)
+
+plt.show()
