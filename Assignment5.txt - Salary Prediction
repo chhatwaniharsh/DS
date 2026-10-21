@@ -1,0 +1,76 @@
+import pandas as pd
+import matplotlib.pyplot as plt
+from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.metrics import mean_squared_error, r2_score
+
+#Load dataset
+df = pd.read_csv("Salary_dataset.csv")
+
+#Display first five rows
+print("First 5 rows:")
+print(df.head())
+
+#Select independent and dependent variables
+X = df[["YearsExperience"]]
+y = df["Salary"]
+
+#Split dataset into training and testing data
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42
+)
+
+#Create Linear Regression model
+model = LinearRegression()
+
+#Train the model
+model.fit(X_train, y_train)
+
+#Predict salary
+y_pred = model.predict(X_test)
+
+#Display predictions
+print("\nActual vs Predicted Salary:")
+result = pd.DataFrame({
+    "Actual Salary": y_test.values,
+    "Predicted Salary": y_pred
+})
+print(result)
+
+#Calculate MSE and R2 score
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("\nModel Evaluation:")
+print("Mean Squared Error:", mse)
+print("R2 Score:", r2)
+
+#Display equation
+print("\nLinear Regression Equation:")
+print("Salary =", model.coef_[0], "* YearsExperience +", model.intercept_)
+
+#Plot regression line
+plt.scatter(X, y, color="blue", label="Actual Data")
+
+plt.plot(
+    X,
+    model.predict(X),
+    color="red",
+    label="Regression Line"
+)
+
+plt.xlabel("Years of Experience")
+plt.ylabel("Salary")
+plt.title("Salary vs Years of Experience")
+plt.legend()
+plt.show()
+
+#Predict salary for a new employee
+experience = [[5]]
+predicted_salary = model.predict(experience)
+
+print("\nPredicted salary for 5 years of experience:",
+      predicted_salary[0])
