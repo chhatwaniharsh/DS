@@ -1,0 +1,88 @@
+import pandas as pd
+from mlxtend.frequent_patterns import fpgrowth, association_rules
+
+#Load dataset
+df = pd.read_csv("Groceries.csv")
+print("Dataset:")
+print(df.head())
+print("\nDataset Shape:", df.shape)
+
+#Create transactions
+transactions = df.groupby(
+    ['Member_number', 'Date']
+)['itemDescription'].apply(list).tolist()
+
+print("\nNumber of Transactions:", len(transactions))
+
+#Get all unique items
+all_items = sorted(
+    set(item for transaction in transactions for item in transaction)
+)
+
+#One-Hot Encoding
+encoded = []
+for transaction in transactions:
+
+    row = {
+        item: (item in transaction)
+        for item in all_items
+    }
+    encoded.append(row)
+
+basket = pd.DataFrame(encoded)
+print("\nBasket Shape:", basket.shape)
+
+#Apply FP-Growth
+frequent_itemsets = fpgrowth(
+    basket,
+    min_support=0.001,
+    use_colnames=True
+)
+print("\nFrequent Itemsets:")
+print(frequent_itemsets.head(10))
+
+#Generate Association Rules
+rules = association_rules(
+    frequent_itemsets,
+    metric="confidence",
+    min_threshold=0.05
+)
+
+#Sort Rules by Confidence
+rules = rules.sort_values(
+    by="confidence",
+    ascending=False
+)
+
+#Display Top 5 Rules
+print("\n" + "=" * 80)
+print("TOP 5 ASSOCIATION RULES")
+print("=" * 80)
+
+if rules.empty:
+    print("\nNo association rules found.")
+    print("No rules satisfy the minimum confidence of 0.05.")
+else:
+    top5 = rules.head(5)
+    for i, row in top5.reset_index(drop=True).iterrows():
+        antecedent = ", ".join(
+            sorted(row["antecedents"])
+        )
+        consequent = ", ".join(
+            sorted(row["consequents"])
+        )
+
+        print(f"\nRule {i + 1}")
+        print(f"{antecedent}  →  {consequent}")
+        print(f"Support    : {row['support']:.4f}")
+        print(f"Confidence : {row['confidence']:.4f}")
+        print(f"Lift       : {row['lift']:.4f}")
+
+        if row["lift"] > 1:
+            print("Association : Positive")
+        elif row["lift"] == 1:
+            print("Association : Independent")
+        else:
+            print("Association : Negative")
+        print("-" * 80)
+        
