@@ -1,0 +1,9 @@
+data(mtcars)
+print(mtcars)
+
+boxplot(mpg ~ factor(cyl),
+        data = mtcars,
+        col = "orange",
+        xlab = "Number of Cylinders",
+        ylab = "Miles per Gallon",
+        main = "MPG by Cylinders")
