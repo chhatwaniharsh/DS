@@ -1,0 +1,46 @@
+install.packages("class")
+library(class)
+
+iris <- datasets::iris
+
+data <- iris[, -5]       # Features
+labels <- iris[, 5]      # Labels
+
+set.seed(123)
+
+trainIndex <- sample(
+  nrow(data),
+  0.7 * nrow(data)
+)
+
+trainData <- data[trainIndex, ]
+trainLabels <- labels[trainIndex]
+
+testData <- data[-trainIndex, ]
+testLabels <- labels[-trainIndex]
+
+# k = 5 means 5 nearest neighbors are considered
+predictions <- knn(
+  train = trainData,
+  test = testData,
+  cl = trainLabels,
+  k = 5
+)
+
+print("Predicted Labels:")
+print(predictions)
+
+print("Actual Labels:")
+print(testLabels)
+
+confusion_matrix <- table(
+  Actual = testLabels,
+  Predicted = predictions
+)
+
+print("Confusion Matrix:")
+print(confusion_matrix)
+
+accuracy <- sum(predictions == testLabels) / length(testLabels)
+
+print(paste("Accuracy:", round(accuracy * 100, 2), "%"))
