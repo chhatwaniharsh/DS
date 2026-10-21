@@ -1,0 +1,76 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.metrics import accuracy_score, confusion_matrix, classification_report
+
+#Load the movie reviews dataset
+df = pd.read_csv("IMDB_Dataset.csv")
+
+#Display first five records
+print("First 5 records:")
+print(df.head())
+
+#Remove missing values
+df = df.dropna(subset=['review', 'sentiment'])
+
+#Separate reviews and sentiment labels
+X = df['review']
+y = df['sentiment']
+
+#Split the dataset into training and testing data
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y,
+    test_size=0.2,
+    random_state=42,
+    stratify=y
+)
+
+#Convert text into numerical features using TF-IDF
+vectorizer = TfidfVectorizer(
+    stop_words='english',
+    max_features=5000
+)
+
+X_train_tfidf = vectorizer.fit_transform(X_train)
+X_test_tfidf = vectorizer.transform(X_test)
+
+#Create Naive Bayes classifier
+model = MultinomialNB()
+
+#Train the model
+model.fit(X_train_tfidf, y_train)
+
+#Predict sentiment
+y_pred = model.predict(X_test_tfidf)
+
+#Calculate accuracy
+accuracy = accuracy_score(y_test, y_pred)
+
+print("\nAccuracy:", accuracy)
+
+#Display confusion matrix
+print("\nConfusion Matrix:")
+print(confusion_matrix(y_test, y_pred))
+
+#Display classification report
+print("\nClassification Report:")
+print(classification_report(y_test, y_pred))
+
+#Test with new movie reviews
+new_reviews = [
+    "This movie was amazing and I really enjoyed it.",
+    "The movie was boring and a complete waste of time."
+]
+
+new_reviews_tfidf = vectorizer.transform(new_reviews)
+
+predictions = model.predict(new_reviews_tfidf)
+
+print("\nNew Review Predictions:")
+
+for review, prediction in zip(new_reviews, predictions):
+    print("Review:", review)
+    print("Sentiment:", prediction)
+    print()
